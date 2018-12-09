@@ -25,10 +25,10 @@
 > games
 > - id (主键)
 > - tournament_id (系列赛的外键，optional)
-> - winning_slot_id (盘口结果的外键)
+> - winning_option_id (盘口结果的外键)
 > - name (盘口名称，如小组赛LGD vs VG。没有tournament_id时，填写完整名称)
 > - description (详细的说明)
-> - maximum_bet_slots (是否允许投注多个选项, 推荐integer类型，default value为1)
+> - maximum_bet_options (是否允许投注多个选项, 推荐integer类型，default value为1)
 > - end_time_for_bet (时间戳，停止投注的时间)
 > - time_for_payoff (时间戳，结算时间)
 > - status (盘口的状态，如未开放，正在进行，正在结算，已结算)
@@ -36,7 +36,7 @@
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
 4. 盘口投注的选项
-> slots
+> betting_options
 > - id (主键)
 > - game_id (盘口的外键)
 > - name (名称，如LGD 2:0 VG、LGD胜)
@@ -48,7 +48,7 @@
 > - id (主键)
 > - user_id (用户id外键)
 > - game_id (盘口外键)
-> - slot_id (投注选项外键)
+> - betting_option_id (投注选项外键)
 > - betted (投注金额)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
@@ -57,7 +57,7 @@
 > - id (主键)
 > - user_id (用户id外键)
 > - game_id (盘口外键)
-> - slot_id (投注选项外键)
+> - betting_option_id (投注选项外键)
 > - betted (投注金额)
 > - inout (是否有进账，boolean, default value为false)
 > - lumbers (进账金额，推荐unsigned integer, default value为0)
