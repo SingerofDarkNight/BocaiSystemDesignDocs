@@ -1,2 +1,3 @@
-# BocaiSystemDesignDocs
-bocai system design docs
+# README
+
+This repo contains design docs for bocai system of BBUHOT.
