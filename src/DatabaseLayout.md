@@ -1,6 +1,8 @@
 # 数据库布局
 
-本文档描述了菠菜系统基本的数据库布局。此文档可能并不完全。如果遇到需要更多表和字段，请自行添加。如果遇到数据表和字段的名称不可用，请自行修改。
+本文档描述了菠菜系统基本的数据库布局。
+此文档可能并不完全。如果遇到需要更多表和字段，请自行添加。
+如果遇到数据表和字段的名称不可用，请自行修改。
 
 ## Details
 1. 用户数据
@@ -15,18 +17,12 @@
 > - lumbers_lost (输掉的代币的总和)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-2. 系列赛(optional)
-> tournaments
-> - id (主键)
-> - name (系列赛的名称，如2018megafon冬季冲突赛)
-> - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
-
-3. 具体的盘口
+2. 具体的盘口
 > games
 > - id (主键)
 > - tournament_id (系列赛的外键，optional)
 > - winning_option_id (盘口结果的外键)
-> - name (盘口名称，如小组赛LGD vs VG。没有tournament_id时，填写完整名称)
+> - name (盘口名称，如2018 TI8 小组赛LGD vs VG)
 > - description (详细的说明)
 > - maximum_bet_options (是否允许投注多个选项, 推荐integer类型，default value为1)
 > - end_time_for_bet (时间戳，停止投注的时间)
@@ -35,7 +31,7 @@
 > - enrolled(参与本盘口的计数器，一个投注算一次)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-4. 盘口投注的选项
+3. 盘口投注的选项
 > betting_options
 > - id (主键)
 > - game_id (盘口的外键)
@@ -43,7 +39,7 @@
 > - odds (赔率，> 1)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-5. 未结算投注详情
+4. 未结算投注详情
 > bets
 > - id (主键)
 > - user_id (用户id外键)
@@ -52,7 +48,7 @@
 > - betted (投注金额)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-6. 已结算投注详情
+5. 已结算投注详情
 > paidoff_bets
 > - id (主键)
 > - user_id (用户id外键)
@@ -63,14 +59,14 @@
 > - lumbers (进账金额，推荐unsigned integer, default value为0)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-7. 关注的盘口
+6. 关注的盘口
 > follows
 > - id (主键)
 > - user_id (用户的外键)
 > - game_id (盘口的外键)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-8. 评论
+7. 评论
 > comments
 > - id (主键)
 > - game_id (盘口的外键)
@@ -78,7 +74,7 @@
 > - content (评论内容)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-9. 短消息
+8. 短消息
 > messages
 > - id (主键)
 > - from (短消息发出者外键)
@@ -86,11 +82,10 @@
 > - content (短消息内容)
 > - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
 
-10. 其他结算历史
+9. 交易历史
 > transaction_history
 > - id (主键)
-> - description (结算说明)
-> - user_id (用户id外键)
-> - inout (是否有进账，boolean, default value为false)
-> - lumbers (进账金额，推荐unsigned integer, default value为0)
-> - timestamps (时间戳，可以有created_at和updated_at, 没有需要可不添加)
+> - description (交易说明)
+> - inout (进出帐，boolean，default value为false)
+> - lumbers (代币的数量)
+> - created_at (时间戳)

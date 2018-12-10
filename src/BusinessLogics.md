@@ -7,9 +7,6 @@
 ## 单个盘口的流程
 ![flow of a specific betting game](images/flow-of-betting-games.png)
 
-## 用户代币的出入图
-![flow of a user's lumbers](images/flow-of-lumbers.png)
-
 ## 基于use case的业务流程
 ### Common Requirements
 1. If a non-admin user tries to do admin's actions, the server must reject
@@ -35,7 +32,7 @@ field)
 
 **forbidden fields**: `status`, `enrolled`, `winning_option`
 
-**response**:
+**Server Responsibilities**:
 1. If the game is created, the server should repond with `"201 Created"` along
    with the game data;
 2. If the server failed to create the game, the server should respond with
@@ -114,9 +111,9 @@ example failed response data
    `"200 OK"` along with an optional message;
 2. If the server failed deleting the game, the server should respond with
    `"400 Bad Request"` along with a message describing the problem;
-3. The server must reject deleting games with status marked as `"open"`, `"close
-   for bets"`, `"closed"`, `"rolling back"`, `"paying off"`, `"paid off"` with
-   `"403 Forbidden"`;
+3. The server must reject deleting games with status marked as `"open"`,
+   `"closeforbets"`, `"closed"`, `"rollingback"`, `"payingoff"`, `"paidoff"`
+   with `"403 Forbidden"`;
 4. The server should remove the related options fields from database;
 5. If the server find the game is already gone, It may respond with `"200 OK"`
    or `"410 Gone"`;
@@ -168,15 +165,15 @@ example failed response data
 
 **Field requirements**:
 1. The same as creating the game;
-2. When updating specific betting options, the option id must be supplied;
-3. When adding a betting option, It must not supply the option id;
+2. When updating specific betting options, the option `id` must be supplied;
+3. When adding a betting option, It must not supply the option `id`;
 <!-- TODO: below is not a good practice -->
 4. When removing a betting option, it should only include the `id` field.
 
-**Server responsibilities**
+**Server responsibilities**:
 1. The server should respond with the whole game information;
-2. The server should respond  a error message  describing the problem with
-   `"400 Bad Request"`;
+2. The server should fail fast and respond  a error message  describing the
+   problem with `"400 Bad Request"`;
 3. The server should reject updating the on-going and ended games(only allow to
    modify `"draft"` and `"published"` games);
 
@@ -246,10 +243,11 @@ example failed response data
 
 **Note**: Mark the status field from `"draft"` to `"published"`
 
-**Server responsibilities**
-1. If the game can't be found, the server should respond with `"404 Not Found"`
-2. If the server successfully published the game, the server should respond with
-   `"200 OK"`
+**Server responsibilities**:
+1. Publishing the game means mark the status field from `"draft"` to `"published"`;
+2. If the game can't be found, the server should respond with `"404 Not Found"`;
+3. If the server successfully published the game, the server should respond with
+   `"200 OK"`;
 
 ### 开盘
 **Role**: admin
@@ -261,11 +259,12 @@ example failed response data
 **Note**: Mark the status field from `"published"` to `"open"`
 
 **Server responsibilities**
-1. `end_time_for_bet` field must be supplied, If the game does not have one;
-2. If the game can't be found, the server should respond with `"404 Not Found"`;
-3. If the server successfully opened the game, the server should respond with
+1. Opening the game means  marking the status from `"published"` to `"open"`;
+2. `end_time_for_bet` field must be supplied, If the game does not have one;
+3. If the game can't be found, the server should respond with `"404 Not Found"`;
+4. If the server successfully opened the game, the server should respond with
    `"200 OK"`;
-4. The server should notify the background worker to change the game status
+5. The server should notify the background worker to change the game status
    from `"open"` to `"closeforbets"` at the `end_time_for_bet`;
 
 
@@ -277,17 +276,19 @@ example failed response data
 **HTTP Verb**: POST
 
 **Server responsibilities**:
-1. If the game can't be found, the server should respond with `"404 Not Found"`
+1. If the game can't be found, the server should respond with `"404 Not Found"`;
 2. The server should immediately mark the game as `"closed"`;
 3. The server should respond with `"200 OK"` and notify the background worker to
    rollback all bets;
 
 **Background worker**:
-1. When the background work must immediately mark the game as `"rollingback"`;
-1. When deleting the bets, the background worker should not only add lumbers to
+1. When the background work must immediately mark the game as `"rollingback"`
+   before processing the bets;
+2. When deleting the bets, the background worker should not only add lumbers to
    users but also update relevant counters, such as `enrolled` field of the
    game, `enrolled` field of users;
-2. When all bets are deleted, the background worker should mark the game as
+3. The worker should write logs to the transaction_history;
+4. When all bets are deleted, the background worker should mark the game as
    `"published"` again;
 
 ### 参与投注
@@ -310,6 +311,7 @@ example failed response data
 3. the server should also update the related counters, such as `enrolled` of
    users, `enrolled` of games;
 4. the server may decide if it accepts multiple bets;
+5. the server must write the betting log to the transaction_history table;
 
 example request data
 ```json
@@ -353,6 +355,8 @@ example failed response data
 3. The server should respond with `"200 OK"` when successfully withdrew the bet;
 4. The server may respond with `"200 OK"` or `"410 Gone"`, when bet already
    withdrew;
+5. The server must reject users withdrawing from non-open games;
+6. The server must write logs to the transaction_history;
 
 <!-- TODO finish this -->
 ### 读取投注
@@ -366,8 +370,8 @@ example failed response data
 1. page, per_page: pagination
 2. status: `paidoff`, `all`, `inprogress`
 
-**Server responsibilities**
-1. The server should limit the user from accessing too many bets;
+**Server responsibilities**:
+1. The server may limit the user from accessing too many bets;
 
 ### 确定结果
 **Role**: admin
@@ -382,7 +386,7 @@ example failed response data
 3. The server must check whether the `winning_option_id` is valid. When it is
    not valid, the server should respond with `"400 Bad Request"`
 4. The server should notify the background worker the results is assigned. The
-   Background worker should make a shedule for paying off.
+   Background worker should make a schedule for paying off.
 
 example request data
 ```json
@@ -401,5 +405,9 @@ example request data
    correspondence in the paidoff_bets table.
 3. Along with the lumbers added to users account, the worker should also update
    related fields, such as: `wons`, `lost`, `lumbers_earned`, `lumbers_lost`
-4. After the server finished processing all bets, It should mark the game as
+4. The worker should write logs to the transaction_history;
+5. After the server finished processing all bets, It should mark the game as
    "paid off".
+
+## Simple Arithmetics
+No matter where the lumber goes, the server should record it.
