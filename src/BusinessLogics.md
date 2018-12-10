@@ -362,6 +362,13 @@ example failed response data
 
 **HTTP Verb**: GET
 
+**Query**:
+1. page, per_page: pagination
+2. status: `paidoff`, `all`, `inprogress`
+
+**Server responsibilities**
+1. The server should limit the user from accessing too many bets;
+
 ### 确定结果
 **Role**: admin
 
