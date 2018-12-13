@@ -1,0 +1,95 @@
+syntax = "proto3"
+
+import "google/protobuf/any.proto";
+
+// shared
+message Error {
+    enum ErrorCode {
+        OK = 0;
+        FOBBIDDEN = 1;
+        UNAUTHORIZED = 2;
+        NOT_FOUND = 3
+        INVALID_DATA = 4;
+    }
+    ErrorCode error_code = 1;
+    string error_message = 2;
+}
+
+message ServerResponse {
+    Error error = 1;
+    repeated google.protobuf.Any data = 2;
+}
+
+// Games
+message BettingOption {
+    int32 id = 1;
+    float odds = 2;
+    string name = 3;
+}
+
+message GameRequest {
+    int32 id = 1;
+    string name = 2;
+    string description = 3;
+    uint32 max_bet_options = 4;
+    int32 bet_min = 5;
+    int32 bet_max = 6;
+    string endtime_for_bet = 7;
+    repeated BettingOption betting_options = 8;
+}
+
+message GamePayoffRequest {
+    int32 id = 1;
+    int32 winning_option_id = 2;
+}
+
+message Game {
+    int32 id = 1;
+    string name = 2;
+    string description = 3;
+    uint32 max_bet_options = 4;
+
+    enum Status {
+        DRAFT = 0;
+        PUBLISHED = 1;
+        OPEN = 2;
+        CLOSING = 3;
+        ROLLING_BACK = 4;
+        CLOSED_FOR_BETS = 5;
+        CLOSED = 6;
+        PAYING_OFF = 7;
+        PAID_OFF = 8;
+    }
+
+    Status status = 5;
+    int32 bet_min = 6;
+    int32 bet_max = 7;
+    string endtime_for_bet = 8;
+    repeated BettingOption betting_options = 9;
+    int32 winningoption_id = 10;
+    uint32 enrolled = 11;
+}
+
+
+// Bets
+message BetAdmin {
+    int32 id = 1;
+    int32 user_id = 2;
+    int32 betting_option_id = 3;
+    int32 betted = 4;
+    string created = 5;
+    int32 earning = 6;
+}
+
+message BetRequest {
+    int32 betting_option_id = 1;
+    int32 betted = 2;
+}
+
+message Bet {
+    int32 id = 1;
+    int32 betting_option_id = 2;
+    int32 betted = 3;
+    string created = 4;
+    int32 earning = 5;
+}
