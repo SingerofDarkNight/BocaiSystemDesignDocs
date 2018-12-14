@@ -58,9 +58,9 @@ message ServerResponse {
 
 ### Administrators
 
-#### Creating Games
+#### Creating/Updating Games
 
-**URL**: games/create
+**URL**: games/create_or_update
 
 **HTTP Verb**: POST
 
@@ -96,13 +96,6 @@ message Game {
     enum Status {
         DRAFT = 0;
         PUBLISHED = 1;
-        OPEN = 2;
-        CLOSING = 3;
-        ROLLING_BACK = 4;
-        CLOSED_FOR_BETS = 5;
-        CLOSED = 6;
-        PAYING_OFF = 7;
-        PAID_OFF = 8;
     }
 
     Status status = 5;
@@ -115,109 +108,95 @@ message Game {
 }
 ```
 
-**Restrictions**:
+**Details**:
 
-1. the `name` and `betting_options` of the `GameRequest` are required fields;
-2. `name` and `odds` of `BettingOption` must come in pairs;
-3. `BettingOption` of the `GameRequest` must not contain the `id` field;
-4. `GameRequest` must not contain the `id` field;
-5. `max_bet_options` must be smaller than the number of `BettingOption`;
+1. Set `id` field of `GameRequest` to `-1` to create a game. Otherwise the server will modify existing games;
+2. All fields of the `GameRequest` are required;
+3. `name` and `odds` of `BettingOption` must come in pairs;
+4. When creating a `Game`, `BettingOption` of the `GameRequest` must not contain the `id` field;
+5. `max_bet_options` must be smaller than the number of `BettingOption`
+6. When updating a `BettingOption` of an existing `Game`, the `id` field must be supplied with other fields;
+7. When adding a `BettingOption` to an existing `Game`, the `id` field must not be set to -1; 
+8. When removing a `BettingOption` from an existing `Game`, the `id` field must be supplied and the `odds` must be set to `0`;
+
+9. Only `DRAFT` `Game` can be updated. The `error_code` should be set to `FORBIDDEN` when admin tries to update `Game` with `PUBLISHED` status;
 
 #### Reading Games
 
-**URL**: games/ (get a list of games) and games/[id] (get a specific game)
+**URL**: games/ 
 
 **HTTP Verb**: GET
 
-**Protobuf**: the same as creating the game
+**Details**:
 
-**Queries**(used to get a list of games):
-
-- `status`: filter by the game status
-- `allowed_multiple`: a game allow bet on multiple options
-- `page`, `per_page`: pagination
-- `order_by`: id, endtime, enrolled
-- `limit`: limit the games retrieved
-
-#### Updating Games
-
-**URL**: games/update
-
-**HTTP Verb**: POST
-
-**Protobuf**: the same as creating the game
-
-**Restrictions**:
-
-1. The `id` field of `Game` must be supplied;
-2. When updating a `BettingOption`, the `id` field must be supplied with other fields;
-3. When adding a `BettingOption`, the `id` field must not be supplied. `name` and `odds` must come in pairs just like creating the game;
-4. When removing a `BettingOption`, the `id` field must be the only field supplied;
-5. Only `DRAFT` and `PUBLISHED` Game can be deleted. The `error_code` should be set to `FORBIDDEN` when admin tries to delete `Game` with status other than the two listed before;
+1. Current implementation get all games at one request;
 
 #### Deleting Games
 
-**URL**: games/delete/[id]
+**URL**: games/delete/
 
 **HTTP Verb**: POST
 
-**Protobuf**: the same as creating the games
+**Protobuf**:
 
-**Restrictions**:
+```protobuf
+message SingleEntryRequest {
+    int32 id = 1;
+}
+```
+
+**Details**:
 
 1. The server should delete related `BettingOption`;
+2. Only `DRAFT` `Game` can be deleted. The `error_code` should be set to `FORBIDDEN` when admin tries to delete `Game` with `PUBLISHED` status;
 
 #### Publishing Games
 
-**URL**: games/publish/[id]
+**URL**: games/publish/
 
 **HTTP Verb**: POST
 
-**Protobuf**: the same as creating the game
-
-#### Opening Games
-
-**URL**: games/open/[id]
-
-**HTTP Verb**: POST
-
-**Protobuf**: the same as creating the game
-
-**Restrictions**:
-
-1. `id` of the `Game` is required.
-2. If the `endtime_for_bet`, `bet_min` or `bet_max` does not exist in the `Game`, the client must supply these information
+**Protobuf**: the same as deleting games
 
 #### Rolling Back Games
 
-**URL**: games/rollback/[id]
+**URL**: games/rollback/
 
 **HTTP Verb**: POST
 
-**Protobuf**: the same as creating the game
+**Protobuf**: the same as deleting games
 
-**Restrictions**:
+**Details**:
 
-1. The server should immediately change the Game status to `CLOSING` and notify the background worker to rollback all bets;
+1. The server should immediately change the `Game` status to `DRAFT` and notify the background worker to rollback all bets;
 
-**Background Worker**:
+#### Publishing Result/ Closing Games
 
-1. When the worker start to roll back all bets, it should immediately change the `Game` status to `ROLLING_BACK`;
-2. When deleting the bets, the worker should not only add credits back to user's account but also update relevant counters;
-3. When all bets are deleted, the worker should change the status to `PUBLISHED` again;
+**URL**: games/settle
+
+**HTTP Verb**: POST
+
+**Protobuf**:
+
+```protobuf
+message GameSettleRequest {
+    int32 id = 1;
+    int32 winning_option_id = 2;
+}
+
+// Response: the same as creating the game
+```
+
+**Details**:
+
+1. The server should notify the background worker to pay off all bets;
+2. Set the `winning_option_id` to `-1` to close the game. Otherwise the `winning_option_id` must be valid;
 
 #### Reading Bets
 
-**URL**: bets/ (a list of bets) and bets/[id] (a specific bet)
+**URL**: bets/ 
 
 **HTTP Verb**: GET
-
-**Queries**:
-
-- `page`, `per_page`: pagination
-- `limit`: a limited number of bets
-- `order_by`: id, user_id, betting_option_id, …
-- `paid`: true/false/all, get only paid bets/only unpaid bets/ all bets
 
 **Protobuf**:
 
@@ -233,70 +212,23 @@ message BetAdmin {
 }
 ```
 
-#### Close Games and Pay off
+**Details**: 
 
-**URL**: games/close/[id]
-
-**HTTP Verb**: POST
-
-**Protobuf**: the same as creating the game
-
-**Restrictions**:
-
-1. The server should immediately change the `Game` status to `CLOSED` and notify the background worker to pay off all bets;
-
-**Background Worker**:
-
-1. When the worker start to pay off all bets, it should immediately change the `Game` status to `PAYING_OFF`;
-2. The worker should do three jobs per transaction: deleting the bet, adding money back to user account and write an entry to the paid_bets;
-3. When the worker finished all bets, it should mark the game as `PAID_OFF`;
-
-#### Assign Results and Pay off
-
-**URL**: games/publish_result
-
-**HTTP Verb**: POST
-
-**Protobuf**:
-
-```protobuf
-message GamePayoffRequest {
-    int32 id = 1;
-    int32 winning_option_id = 2;
-}
-
-// Response: the same as creating the game
-```
-
-**Restrictions**:
-
-1. The server should immediately change the Game status to `CLOSED` and notify the background worker to pay off all bets;
-
-**Background Worker**: the same as closing games
+1. the mechanism is the same as reading the games
 
 ### Common Users
 
-#### Read Games
+#### Reading Games
 
-**URL**: games/ (get a list of games) and games/[id] (get a specific game)
+**URL**: games/
 
 **HTTP Verb**: GET
 
-**Protobuf**: the same as creating the game
-
-**Queries**(used to get a list of games):
-
-- `status`: filter by the game status
-- `allowed_multiple`: a game allow bet on multiple options
-- `page`, `per_page`: pagination
-- `order_by`: id, endtime, enrolled
-- `limit`: limit the games retrieved
-
-**Restrictions**:
+**Details**:
 
 1. The server should reject common users accessing `DRAFT` games;
 
-#### Bet on Games
+#### Betting on Games
 
 **URL**: bets/bet
 
@@ -317,45 +249,23 @@ message Bet {
     int32 betting_option_id = 2;
     int32 betted = 3;
     string created = 4;
-    int32 earning = 5;
 }
 ```
 
-1. Server should first check the `endtime_for_bet`. If the time has passed, the server should reject bets and mark the game as `CLOSE_FOR_BETS`;
-2. Users can only bet on `OPEN` games;
-3. Users must have sufficient credits;
-4. betted credits must be in the range from `bet_min` and `bet_max`;
-5. Server should update related counters;
+1. Server should first check the `endtime_for_bet`. If the time has passed, the server should reject bets;
+2. Users must have sufficient credits;
+3. betted credits must be in the range from `bet_min` and `bet_max`;
+4. Server should update related counters;
 
-#### Withdraw Bets
+#### Reading All unsettled Bets
 
-**URL**: bets/withdraw/[id]
-
-**HTTP Verb**: POST
-
-**Protobuf**: the same as betting on games
-
-**Restrictions**:
-
-1. Users can only withdraw from `OPEN` games;
-2. Users can only withdraw their own bets;
-3. Server should update related counters;
-
-#### Read Bets
-
-**URL**: bets/ (a list of bets) and bets/[id] (a specific bet)
+**URL**: bets/unsettled
 
 **HTTP Verb**: GET
 
-**Queries**:
-
-- `page`, `per_page`: pagination
-- `limit`: a limited number of bets
-- `order_by`: id, user_id, betting_option_id, …
-- `paid`: true/false/all, get only paid bets/only unpaid bets/ all bets
-
 **Protobuf**: the same as betting on games
 
-**Restrictions**:
+**Details**:
 
 1. Users can only accessing their own bets;
+2. Current implementation returns all bets of the user;
