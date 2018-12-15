@@ -118,10 +118,10 @@ message Game {
 }
 ```
 
-1. The `status` field change is crucial. The self to self status changes are used when something went wrong in the server, it will trigger the worker to process the remaining bets again. 
+1. The `status` field change is crucial. The self to self status changes are used when something went wrong in the server, it will trigger the worker to process the remaining bets again.
 2. `DRAFT` to `Settled`, `Settled` to `DRAFT` are prohibited;
 
-![status](/Users/luciusgone/Developer/BocaiSystemDesignDocs/src/images/status.png)
+![status](images/status.png)
 
 2. betting_options` comes in order and we rely on the order to determine which option is winning;
 
